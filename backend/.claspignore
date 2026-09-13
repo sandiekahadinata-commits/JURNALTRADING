@@ -1,0 +1,4 @@
+# File yang tidak di-push ke Apps Script (relatif terhadap rootDir / project).
+tools/**
+node_modules/**
+**/*.md
