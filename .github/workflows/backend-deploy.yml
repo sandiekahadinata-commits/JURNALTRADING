@@ -1,0 +1,32 @@
+name: Deploy Backend (Google Apps Script)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: clasp push + deploy
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Write clasp credentials
+        run: echo '${{ secrets.CLASPRC_JSON }}' > "$HOME/.clasprc.json"
+      - name: Push & deploy
+        env:
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          DEPLOYMENT_ID: ${{ secrets.DEPLOYMENT_ID }}
+        run: npm run deploy

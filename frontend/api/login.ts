@@ -8,7 +8,7 @@ import {
   jsonResponse,
   recordLoginFailure,
   setSessionCookie,
-} from './_lib'
+} from './_lib.js'
 
 export default function handler(req: VercelRequest, res: VercelResponse): void {
   if (req.method !== 'POST') {

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-import { clearSessionCookie, jsonResponse } from './_lib'
+import { clearSessionCookie, jsonResponse } from './_lib.js'
 
 export default function handler(_req: VercelRequest, res: VercelResponse): void {
   clearSessionCookie(res)

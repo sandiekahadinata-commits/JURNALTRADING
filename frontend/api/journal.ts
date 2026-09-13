@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-import { getEnv, isAuthenticated, jsonResponse } from './_lib'
+import { getEnv, isAuthenticated, jsonResponse } from './_lib.js'
 
 async function fetchWithRetry(url: string, init: RequestInit, attempts: number): Promise<Response> {
   let lastError: unknown = null
