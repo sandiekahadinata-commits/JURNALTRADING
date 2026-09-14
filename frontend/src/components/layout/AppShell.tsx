@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   CandlestickChart,
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
 
 import { ConnectionStatus } from '@/components/common/ConnectionStatus'
 import { Button } from '@/components/ui/button'
+import { prefetchJournal } from '@/hooks/useJournal'
 import { useLogout } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
 ]
 
 function NavItems({ orientation }: { orientation: 'vertical' | 'horizontal' }) {
+  const queryClient = useQueryClient()
+
   return (
     <nav
       className={cn(
@@ -33,6 +37,8 @@ function NavItems({ orientation }: { orientation: 'vertical' | 'horizontal' }) {
           key={item.to}
           to={item.to}
           end={item.end}
+          onMouseEnter={() => void prefetchJournal(queryClient)}
+          onFocus={() => void prefetchJournal(queryClient)}
           className={({ isActive }) =>
             cn(
               'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',

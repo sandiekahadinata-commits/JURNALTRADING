@@ -1,8 +1,9 @@
 import type { ApiEnvelope, ApiErrorShape } from '@/types/api.types'
 
 const API_BASE = '/api/journal'
-const GET_ATTEMPTS = 4
+const GET_ATTEMPTS = 2
 const POST_ATTEMPTS = 1
+const REQUEST_TIMEOUT_MS = 12_000
 
 export class ApiError extends Error {
   code: string
@@ -39,7 +40,28 @@ function notifyUnauthorized(): void {
 }
 
 async function requestOnce<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { credentials: 'include', ...init })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+  let response: Response
+  try {
+    response = await fetch(url, {
+      credentials: 'include',
+      ...init,
+      signal: controller.signal,
+    })
+  } catch (err) {
+    if (controller.signal.aborted) {
+      throw new ApiError(
+        'TIMEOUT',
+        'Server terlalu lama merespons. Coba lagi sebentar.',
+      )
+    }
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
+
   const text = await response.text()
   const envelope = parseEnvelope<T>(text)
 
@@ -72,9 +94,11 @@ async function requestWithRetry<T>(
       return await requestOnce<T>(url, init)
     } catch (err) {
       lastError = err
-      if (err instanceof ApiError && err.code !== 'BAD_RESPONSE') {
-        throw err
-      }
+      const retryable =
+        !(err instanceof ApiError) ||
+        err.code === 'BAD_RESPONSE' ||
+        err.code === 'TIMEOUT'
+      if (!retryable) throw err
       if (attempt < attempts) {
         await sleep(600 * attempt)
       }

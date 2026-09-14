@@ -38,8 +38,8 @@ export interface JournalConfig {
   setupTags: string[]
 }
 
-export interface MonthlyMetrics {
-  month: string
+/** Metrik inti yang dipakai bersama oleh agregasi bulanan, harian, dan mingguan. */
+export interface PeriodMetrics {
   totalTrades: number
   wins: number
   losses: number
@@ -49,9 +49,57 @@ export interface MonthlyMetrics {
   profitFactor: number
   expectedValue: number
   totalPnl: number
+  avgRMultiple: number
+}
+
+export interface MonthlyMetrics extends PeriodMetrics {
+  month: string
   maxConsecutiveLoss: number
   maxConsecutiveWin: number
-  avgRMultiple: number
+}
+
+export interface DailyMetrics extends PeriodMetrics {
+  /** YYYY-MM-DD dari exitDate. */
+  date: string
+}
+
+export interface StreakInfo {
+  type: 'Win' | 'Loss' | 'None'
+  count: number
+  maxConsecutiveWin: number
+  maxConsecutiveLoss: number
+}
+
+export type WeeklyVerdict = 'PROFITABLE' | 'FLAT' | 'RUGI'
+
+export type BreakdownDimension =
+  | 'setupTag'
+  | 'session'
+  | 'symbol'
+  | 'direction'
+  | 'timeframe'
+
+export interface DimensionBreakdown {
+  key: string
+  totalTrades: number
+  wins: number
+  losses: number
+  breakEvens: number
+  winRate: number
+  netR: number
+  totalPnl: number
+}
+
+export interface WeeklyEvaluation {
+  startDate: string
+  endDate: string
+  metrics: PeriodMetrics
+  verdict: WeeklyVerdict
+  bestTrade: Trade | null
+  worstTrade: Trade | null
+  streaks: StreakInfo
+  breakdowns: Record<BreakdownDimension, DimensionBreakdown[]>
+  insights: string[]
 }
 
 export type ImproveVerdict = 'IMPROVING' | 'NEEDS ATTENTION' | 'DECLINING'

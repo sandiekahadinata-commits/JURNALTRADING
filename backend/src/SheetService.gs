@@ -170,6 +170,68 @@ function clearDataRows_(sheetName) {
   }
 }
 
+/**
+ * Cache baca (CacheService) untuk memangkas round-trip ke Sheets pada
+ * request berulang. TTL pendek; selalu di-invalidate saat ada operasi tulis.
+ */
+var READ_CACHE_TTL_SECONDS = 60;
+var CACHE_KEY_TRADES = 'cache_trades_v1';
+var CACHE_KEY_CONFIG = 'cache_config_v1';
+var CACHE_MAX_BYTES = 90000;
+
+function cacheGetJson_(key) {
+  try {
+    var raw = CacheService.getScriptCache().get(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function cachePutJson_(key, value) {
+  try {
+    var raw = JSON.stringify(value);
+    if (raw.length > CACHE_MAX_BYTES) return;
+    CacheService.getScriptCache().put(key, raw, READ_CACHE_TTL_SECONDS);
+  } catch (err) {
+    // Kegagalan cache tidak boleh menggagalkan request.
+  }
+}
+
+function invalidateReadCache_() {
+  try {
+    CacheService.getScriptCache().removeAll([CACHE_KEY_TRADES, CACHE_KEY_CONFIG]);
+  } catch (err) {
+    // abaikan
+  }
+}
+
+/**
+ * Versi listTrades_ dengan cache. Hanya filter kosong yang di-cache karena
+ * penyaringan utama dilakukan di frontend.
+ */
+function cachedListTrades_(filters) {
+  filters = filters || {};
+  var names = ['month', 'symbol', 'result', 'search'];
+  for (var i = 0; i < names.length; i++) {
+    if (filters[names[i]]) return listTrades_(filters);
+  }
+  var cached = cacheGetJson_(CACHE_KEY_TRADES);
+  if (cached) return cached;
+  var trades = listTrades_({});
+  cachePutJson_(CACHE_KEY_TRADES, trades);
+  return trades;
+}
+
+/** Versi getConfig_ dengan cache. */
+function cachedConfig_() {
+  var cached = cacheGetJson_(CACHE_KEY_CONFIG);
+  if (cached) return cached;
+  var config = getConfig_();
+  cachePutJson_(CACHE_KEY_CONFIG, config);
+  return config;
+}
+
 function getColumnIndex_(sheetName, header) {
   var sheet = getSheet_(sheetName);
   var lastColumn = sheet.getLastColumn();

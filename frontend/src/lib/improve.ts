@@ -7,7 +7,7 @@ import type {
   ImproveDimension,
   ImproveStatus,
   ImproveVerdict,
-  MonthlyMetrics,
+  PeriodMetrics,
 } from '@/types/journal.types'
 
 function profitFactorDelta(current: number, previous: number): number {
@@ -22,8 +22,8 @@ function profitFactorDelta(current: number, previous: number): number {
  * >= 2 dimensi improve => IMPROVING, 1 => NEEDS ATTENTION, 0 => DECLINING.
  */
 export function computeImproveStatus(
-  current: MonthlyMetrics | null,
-  previous: MonthlyMetrics | null,
+  current: PeriodMetrics | null,
+  previous: PeriodMetrics | null,
 ): ImproveStatus {
   if (!current || !previous) {
     return {

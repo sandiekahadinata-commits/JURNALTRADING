@@ -16,6 +16,10 @@ import { ImproveStatusBadge } from '@/components/dashboard/ImproveStatusBadge'
 import { KpiCard, type KpiTone } from '@/components/dashboard/KpiCard'
 import { LastTradesTable } from '@/components/dashboard/LastTradesTable'
 import { StreakTracker } from '@/components/dashboard/StreakTracker'
+import { WeeklyBreakdown } from '@/components/dashboard/WeeklyBreakdown'
+import { WeeklyEvaluationCard } from '@/components/dashboard/WeeklyEvaluationCard'
+import { WeeklyInsights } from '@/components/dashboard/WeeklyInsights'
+import { DailyPnlBarChart } from '@/components/charts/DailyPnlBarChart'
 import { NetRBarChart } from '@/components/charts/NetRBarChart'
 import { PnlBarChart } from '@/components/charts/PnlBarChart'
 import { WinRateTrendChart } from '@/components/charts/WinRateTrendChart'
@@ -25,8 +29,11 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { BREAKEVEN_WIN_RATE } from '@/lib/constants'
+import { todayKey } from '@/lib/date'
 import {
   formatCurrency,
+  formatDateID,
+  formatDateRangeID,
   formatMonthLongID,
   formatPercent,
   formatProfitFactor,
@@ -37,7 +44,9 @@ import {
   computeBestWorstMonth,
   computeMonthlyMetrics,
   computeStreaks,
+  computeWeeklyEvaluation,
   getMonthKeys,
+  getRecentDailySeries,
   getRecentMonthlySeries,
   groupTradesByMonth,
 } from '@/lib/metrics'
@@ -76,6 +85,8 @@ export function DashboardPage() {
       ? computeMonthlyMetrics(previousMonth, groups.get(previousMonth) ?? [])
       : null
 
+    const today = todayKey()
+
     return {
       current,
       previous,
@@ -83,6 +94,8 @@ export function DashboardPage() {
       streaks: computeStreaks(trades),
       bestWorst: computeBestWorstMonth(trades),
       improve: computeImproveStatus(current, previous),
+      weekly: computeWeeklyEvaluation(trades, today),
+      daily: getRecentDailySeries(trades, 7, today),
     }
   }, [trades])
 
@@ -126,12 +139,21 @@ export function DashboardPage() {
     )
   }
 
-  const { current, previous, series, streaks, bestWorst, improve } = derived
+  const { current, previous, series, streaks, bestWorst, improve, weekly, daily } =
+    derived
   const targetWinRate = config?.targetWinRate ?? 50
 
   const winRateDelta = previous ? current.winRate - previous.winRate : null
   const netRDelta = previous ? current.netR - previous.netR : null
   const pnlDelta = previous ? current.totalPnl - previous.totalPnl : null
+
+  const todayEntry = daily[daily.length - 1]
+  const yesterdayEntry = daily[daily.length - 2]
+  const todayPnl = todayEntry?.totalPnl ?? 0
+  const yesterdayPnl = yesterdayEntry?.totalPnl ?? 0
+  const dayDelta = todayPnl - yesterdayPnl
+  const dayDeltaTone: KpiTone =
+    dayDelta > 0 ? 'positive' : dayDelta < 0 ? 'negative' : 'neutral'
 
   return (
     <div className="space-y-6">
@@ -197,6 +219,65 @@ export function DashboardPage() {
           icon={Activity}
         />
       </div>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Evaluasi Mingguan</h2>
+          <span className="text-sm text-muted-foreground">
+            {formatDateRangeID(weekly.startDate, weekly.endDate)}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiCard
+            label="P&L Hari Ini"
+            value={formatCurrency(todayPnl, { signed: true })}
+            hint={todayEntry ? formatDateID(todayEntry.date) : '-'}
+            tone={todayPnl >= 0 ? 'positive' : 'negative'}
+            icon={DollarSign}
+          />
+          <KpiCard
+            label="P&L Kemarin"
+            value={formatCurrency(yesterdayPnl, { signed: true })}
+            hint={yesterdayEntry ? formatDateID(yesterdayEntry.date) : '-'}
+            tone={yesterdayPnl >= 0 ? 'positive' : 'negative'}
+            icon={DollarSign}
+          />
+          <KpiCard
+            label="Perubahan vs Kemarin"
+            value={formatCurrency(dayDelta, { signed: true })}
+            hint="Selisih P&L harian"
+            tone={dayDeltaTone}
+            icon={Activity}
+          />
+        </div>
+
+        <WeeklyEvaluationCard evaluation={weekly} />
+
+        {weekly.metrics.totalTrades > 0 ? (
+          <>
+            <ChartCard
+              title="P&L Harian (7 Hari Terakhir)"
+              description="Keuntungan/kerugian per hari dalam USDT"
+            >
+              <DailyPnlBarChart data={daily} />
+            </ChartCard>
+
+            <WeeklyBreakdown breakdowns={weekly.breakdowns} />
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <StreakTracker streak={weekly.streaks} />
+              <WeeklyInsights insights={weekly.insights} />
+            </div>
+          </>
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-muted-foreground">
+              Belum ada trade dalam 7 hari terakhir.
+            </CardContent>
+          </Card>
+        )}
+      </section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard

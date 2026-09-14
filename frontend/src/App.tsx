@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { LoadingState } from '@/components/common/LoadingState'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoginPage } from '@/pages/LoginPage'
+import { prefetchJournal } from '@/hooks/useJournal'
 import { sessionQueryKey, useSession } from '@/hooks/useAuth'
 
 const DashboardPage = lazy(() =>
@@ -52,6 +53,12 @@ function AuthGate() {
       window.removeEventListener('journal:unauthorized', handleUnauthorized)
     }
   }, [queryClient])
+
+  useEffect(() => {
+    if (data?.authenticated) {
+      void prefetchJournal(queryClient)
+    }
+  }, [data?.authenticated, queryClient])
 
   if (isLoading) {
     return (

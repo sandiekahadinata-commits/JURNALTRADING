@@ -1,4 +1,4 @@
-import { DatabaseZap, RotateCcw, Trash2 } from 'lucide-react'
+import { DatabaseZap, RefreshCw, RotateCcw, Trash2 } from 'lucide-react'
 
 import { ConfigForm } from '@/components/config/ConfigForm'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -16,12 +16,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCurrency } from '@/lib/format'
-import { useClearAll, useSeedDemo, useTrades } from '@/hooks/useJournal'
+import {
+  useClearAll,
+  useRecalcSheets,
+  useSeedDemo,
+  useTrades,
+} from '@/hooks/useJournal'
 
 export function ConfigPage() {
   const tradesQuery = useTrades()
   const seedDemo = useSeedDemo()
   const clearAll = useClearAll()
+  const recalcSheets = useRecalcSheets()
 
   const trades = tradesQuery.data ?? []
 
@@ -68,8 +74,28 @@ export function ConfigPage() {
               Gagal menghapus data: {clearAll.error?.message}
             </p>
           ) : null}
+          {recalcSheets.isError ? (
+            <p className="rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">
+              Gagal memperbarui sheet: {recalcSheets.error?.message}
+            </p>
+          ) : null}
+          {recalcSheets.isSuccess ? (
+            <p className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-400">
+              Sheet DASHBOARD &amp; MONTHLY diperbarui ({recalcSheets.data.trades}{' '}
+              trade, {recalcSheets.data.months} bulan).
+            </p>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => recalcSheets.mutate()}
+              disabled={recalcSheets.isPending}
+            >
+              <RefreshCw className="h-4 w-4" />
+              {recalcSheets.isPending ? 'Memperbarui...' : 'Recalculate Sheets'}
+            </Button>
+
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="outline" disabled={seedDemo.isPending}>

@@ -1,26 +1,53 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query'
 
 import type { TradeInput } from '@/lib/trade-utils'
 import { journalService } from '@/services/journal.service'
-import type { JournalConfig } from '@/types/journal.types'
+import type { BootstrapResult } from '@/types/api.types'
+import type { JournalConfig, Trade } from '@/types/journal.types'
 
 export const queryKeys = {
-  trades: ['trades'] as const,
-  config: ['config'] as const,
+  journal: ['journal'] as const,
   ping: ['ping'] as const,
+}
+
+function sortByExitDesc(trades: Trade[]): Trade[] {
+  return [...trades].sort((a, b) => b.exitDate.localeCompare(a.exitDate))
+}
+
+function updateJournalCache(
+  queryClient: QueryClient,
+  updater: (current: BootstrapResult) => BootstrapResult,
+): void {
+  queryClient.setQueryData<BootstrapResult>(queryKeys.journal, (current) =>
+    current ? updater(current) : current,
+  )
+}
+
+export function prefetchJournal(queryClient: QueryClient): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: queryKeys.journal,
+    queryFn: () => journalService.bootstrap(),
+  })
 }
 
 export function useTrades() {
   return useQuery({
-    queryKey: queryKeys.trades,
-    queryFn: () => journalService.listTrades(),
+    queryKey: queryKeys.journal,
+    queryFn: () => journalService.bootstrap(),
+    select: (data: BootstrapResult) => data.trades,
   })
 }
 
 export function useConfig() {
   return useQuery({
-    queryKey: queryKeys.config,
-    queryFn: () => journalService.getConfig(),
+    queryKey: queryKeys.journal,
+    queryFn: () => journalService.bootstrap(),
+    select: (data: BootstrapResult) => data.config,
   })
 }
 
@@ -29,63 +56,84 @@ export function usePing() {
     queryKey: queryKeys.ping,
     queryFn: () => journalService.ping(),
     retry: false,
-    refetchInterval: 60_000,
+    staleTime: 60_000,
   })
 }
 
-function useInvalidateJournal() {
-  const queryClient = useQueryClient()
-  return () => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.trades })
-    void queryClient.invalidateQueries({ queryKey: queryKeys.config })
-  }
-}
-
 export function useCreateTrade() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: TradeInput) => journalService.createTrade(input),
-    onSuccess: invalidate,
+    onSuccess: (created) => {
+      updateJournalCache(queryClient, (current) => ({
+        ...current,
+        trades: sortByExitDesc([created, ...current.trades]),
+      }))
+    },
   })
 }
 
 export function useUpdateTrade() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: TradeInput }) =>
       journalService.updateTrade(id, input),
-    onSuccess: invalidate,
+    onSuccess: (updated) => {
+      updateJournalCache(queryClient, (current) => ({
+        ...current,
+        trades: sortByExitDesc(
+          current.trades.map((trade) => (trade.id === updated.id ? updated : trade)),
+        ),
+      }))
+    },
   })
 }
 
 export function useDeleteTrade() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => journalService.deleteTrade(id),
-    onSuccess: invalidate,
+    onSuccess: (_result, id) => {
+      updateJournalCache(queryClient, (current) => ({
+        ...current,
+        trades: current.trades.filter((trade) => trade.id !== id),
+      }))
+    },
   })
 }
 
 export function useUpdateConfig() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (patch: Partial<JournalConfig>) => journalService.updateConfig(patch),
-    onSuccess: invalidate,
+    onSuccess: (config) => {
+      updateJournalCache(queryClient, (current) => ({ ...current, config }))
+    },
   })
 }
 
 export function useSeedDemo() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => journalService.seedDemo(),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.journal })
+    },
   })
 }
 
 export function useClearAll() {
-  const invalidate = useInvalidateJournal()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => journalService.clearAll(),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      updateJournalCache(queryClient, (current) => ({ ...current, trades: [] }))
+    },
+  })
+}
+
+export function useRecalcSheets() {
+  return useMutation({
+    mutationFn: () => journalService.recalcSheets(),
   })
 }

@@ -51,17 +51,23 @@ function route_(action, e, body) {
       var setupResult = refreshAll_();
       return ok_({ initialized: true, trades: setupResult.trades, months: setupResult.months });
 
+    case 'bootstrap':
+      ensureInitialized_();
+      return ok_({ trades: cachedListTrades_({}), config: cachedConfig_() });
+
     case 'getConfig':
       ensureInitialized_();
-      return ok_(getConfig_());
+      return ok_(cachedConfig_());
 
     case 'updateConfig':
       ensureInitialized_();
-      return ok_(updateConfig_(payload || {}));
+      var updatedConfig = updateConfig_(payload || {});
+      invalidateReadCache_();
+      return ok_(updatedConfig);
 
     case 'listTrades':
       ensureInitialized_();
-      return ok_(listTrades_(extractFilters_(e, payload)));
+      return ok_(cachedListTrades_(extractFilters_(e, payload)));
 
     case 'getTrade':
       ensureInitialized_();
@@ -72,25 +78,25 @@ function route_(action, e, body) {
     case 'createTrade':
       ensureInitialized_();
       var created = createTrade_(payload || {});
-      refreshAll_();
+      invalidateReadCache_();
       return ok_(created);
 
     case 'updateTrade':
       ensureInitialized_();
       var updated = updateTrade_((payload || {}).id, (payload || {}).input || payload || {});
-      refreshAll_();
+      invalidateReadCache_();
       return ok_(updated);
 
     case 'deleteTrade':
       ensureInitialized_();
       var deleted = deleteTrade_(extractParam_(e, payload, 'id'));
-      refreshAll_();
+      invalidateReadCache_();
       return ok_(deleted);
 
     case 'clearAll':
       ensureInitialized_();
       var cleared = clearAllTrades_();
-      refreshAll_();
+      invalidateReadCache_();
       return ok_(cleared);
 
     case 'getMonthly':
@@ -112,7 +118,7 @@ function route_(action, e, body) {
     case 'seedDemo':
       ensureInitialized_();
       var seeded = seedDemoData_();
-      refreshAll_();
+      invalidateReadCache_();
       return ok_({ inserted: seeded });
 
     default:

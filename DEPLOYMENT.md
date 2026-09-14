@@ -19,7 +19,7 @@ Browser ──same-origin──► Vercel SPA
 
 ## URL Produksi
 
-- App: https://frontend-three-dusky-3htwh4hxyk.vercel.app
+- App: https://trading-jurnal-sfp.vercel.app
 - Spreadsheet: https://docs.google.com/spreadsheets/d/14hJPibd0zVGUzJeMAxxcbGWVz98QPQCBwPKPjbpY_u8/edit
 - Script IDE: https://script.google.com/d/1vPgSOS14kCk-61kKYbAWHWbAumUw8vMsBaxZF19w3JxSGyGT4YB2I23_/edit
 

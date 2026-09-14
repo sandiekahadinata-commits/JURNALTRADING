@@ -1,4 +1,7 @@
 import { MONTH_LABELS_ID } from '@/lib/constants'
+import { dayOfWeekIndex } from '@/lib/date'
+
+const DAY_LABELS_ID = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab']
 
 /** Format tanggal ISO (YYYY-MM-DD) menjadi DD/MM/YYYY. */
 export function formatDateID(iso: string): string {
@@ -6,6 +9,20 @@ export function formatDateID(iso: string): string {
   const [year, month, day] = iso.split('-')
   if (!year || !month || !day) return iso
   return `${day}/${month}/${year}`
+}
+
+/** Format tanggal ISO menjadi label hari singkat, mis. "Sen 08/09". */
+export function formatDayShortID(iso: string): string {
+  if (!iso) return '-'
+  const [, month, day] = iso.split('-')
+  if (!month || !day) return iso
+  const label = DAY_LABELS_ID[dayOfWeekIndex(iso)] ?? ''
+  return `${label} ${day}/${month}`
+}
+
+/** Rentang tanggal, mis. "08/09/2026 – 14/09/2026". */
+export function formatDateRangeID(start: string, end: string): string {
+  return `${formatDateID(start)} – ${formatDateID(end)}`
 }
 
 /** Ambil key bulan (YYYY-MM) dari tanggal ISO (YYYY-MM-DD). */

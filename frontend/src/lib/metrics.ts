@@ -3,8 +3,22 @@ import {
   CHART_MONTHS_WINDOW,
   RISK_REWARD_RATIO,
 } from '@/lib/constants'
+import { addDays, todayKey } from '@/lib/date'
+import { buildWeeklyInsights } from '@/lib/insights'
 import { sortTradesByExitDesc } from '@/lib/trade-utils'
-import type { MonthlyMetrics, Trade } from '@/types/journal.types'
+import type {
+  BreakdownDimension,
+  DailyMetrics,
+  DimensionBreakdown,
+  MonthlyMetrics,
+  PeriodMetrics,
+  StreakInfo,
+  Trade,
+  WeeklyEvaluation,
+  WeeklyVerdict,
+} from '@/types/journal.types'
+
+export type { StreakInfo } from '@/types/journal.types'
 
 export function groupTradesByMonth(trades: Trade[]): Map<string, Trade[]> {
   const groups = new Map<string, Trade[]>()
@@ -35,10 +49,8 @@ function computeMaxConsecutive(
   return max
 }
 
-export function computeMonthlyMetrics(
-  month: string,
-  trades: Trade[],
-): MonthlyMetrics {
+/** Metrik inti bersama untuk agregasi harian/mingguan/bulanan. */
+export function computePeriodMetrics(trades: Trade[]): PeriodMetrics {
   const totalTrades = trades.length
   const wins = trades.filter((t) => t.result === 'Win').length
   const losses = trades.filter((t) => t.result === 'Loss').length
@@ -56,7 +68,11 @@ export function computeMonthlyMetrics(
     trades.filter((t) => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0),
   )
   const profitFactor =
-    grossLoss === 0 ? (grossProfit > 0 ? Number.POSITIVE_INFINITY : 0) : grossProfit / grossLoss
+    grossLoss === 0
+      ? grossProfit > 0
+        ? Number.POSITIVE_INFINITY
+        : 0
+      : grossProfit / grossLoss
 
   const winRateFraction = wins / (totalTrades || 1)
   const lossRateFraction = losses / (totalTrades || 1)
@@ -70,10 +86,7 @@ export function computeMonthlyMetrics(
       ? 0
       : trades.reduce((sum, t) => sum + t.rMultiple, 0) / totalTrades
 
-  const chronological = sortTradesByExitDesc(trades).reverse()
-
   return {
-    month,
     totalTrades,
     wins,
     losses,
@@ -83,10 +96,30 @@ export function computeMonthlyMetrics(
     profitFactor,
     expectedValue,
     totalPnl,
-    maxConsecutiveLoss: computeMaxConsecutive(chronological, 'Loss'),
-    maxConsecutiveWin: computeMaxConsecutive(chronological, 'Win'),
     avgRMultiple,
   }
+}
+
+export function computeMonthlyMetrics(
+  month: string,
+  trades: Trade[],
+): MonthlyMetrics {
+  const base = computePeriodMetrics(trades)
+  const chronological = sortTradesByExitDesc(trades).reverse()
+
+  return {
+    month,
+    ...base,
+    maxConsecutiveLoss: computeMaxConsecutive(chronological, 'Loss'),
+    maxConsecutiveWin: computeMaxConsecutive(chronological, 'Win'),
+  }
+}
+
+export function computeDailyMetrics(
+  date: string,
+  trades: Trade[],
+): DailyMetrics {
+  return { date, ...computePeriodMetrics(trades) }
 }
 
 /** Semua bulan yang punya data, urut menaik (asc). */
@@ -110,11 +143,138 @@ export function getRecentMonthlySeries(
   return computeMonthlySeries(trades).slice(-window)
 }
 
-export interface StreakInfo {
-  type: 'Win' | 'Loss' | 'None'
-  count: number
-  maxConsecutiveWin: number
-  maxConsecutiveLoss: number
+/** Trade dengan exitDate dalam rentang [startDate, endDate] (inklusif). */
+export function getTradesInRange(
+  trades: Trade[],
+  startDate: string,
+  endDate: string,
+): Trade[] {
+  return trades.filter(
+    (trade) =>
+      trade.exitDate >= startDate && trade.exitDate <= endDate,
+  )
+}
+
+/** Rentang N hari terakhir yang berakhir di `endKey` (inklusif). */
+export function getLastNDaysRange(
+  endKey: string,
+  days: number,
+): { startDate: string; endDate: string } {
+  return { startDate: addDays(endKey, -(days - 1)), endDate: endKey }
+}
+
+/** Series P&L harian N hari terakhir, urut menaik (paling lama -> hari ini). */
+export function getRecentDailySeries(
+  trades: Trade[],
+  days = 7,
+  endKey: string = todayKey(),
+): DailyMetrics[] {
+  const { startDate, endDate } = getLastNDaysRange(endKey, days)
+
+  const byDate = new Map<string, Trade[]>()
+  for (const trade of trades) {
+    const key = trade.exitDate
+    if (key < startDate || key > endDate) continue
+    const bucket = byDate.get(key)
+    if (bucket) bucket.push(trade)
+    else byDate.set(key, [trade])
+  }
+
+  const series: DailyMetrics[] = []
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const key = addDays(endDate, -i)
+    series.push(computeDailyMetrics(key, byDate.get(key) ?? []))
+  }
+  return series
+}
+
+function groupKey(trade: Trade, dimension: BreakdownDimension): string {
+  const key = trade[dimension]
+  return key && String(key).trim() ? String(key) : '—'
+}
+
+export function computeDimensionBreakdown(
+  trades: Trade[],
+  dimension: BreakdownDimension,
+): DimensionBreakdown[] {
+  const groups = new Map<string, Trade[]>()
+  for (const trade of trades) {
+    const key = groupKey(trade, dimension)
+    const bucket = groups.get(key)
+    if (bucket) bucket.push(trade)
+    else groups.set(key, [trade])
+  }
+
+  return [...groups.entries()]
+    .map(([key, group]) => {
+      const base = computePeriodMetrics(group)
+      return {
+        key,
+        totalTrades: base.totalTrades,
+        wins: base.wins,
+        losses: base.losses,
+        breakEvens: base.breakEvens,
+        winRate: base.winRate,
+        netR: base.netR,
+        totalPnl: base.totalPnl,
+      }
+    })
+    .sort((a, b) => b.netR - a.netR)
+}
+
+export function computeAllBreakdowns(
+  trades: Trade[],
+): Record<BreakdownDimension, DimensionBreakdown[]> {
+  return {
+    setupTag: computeDimensionBreakdown(trades, 'setupTag'),
+    session: computeDimensionBreakdown(trades, 'session'),
+    symbol: computeDimensionBreakdown(trades, 'symbol'),
+    direction: computeDimensionBreakdown(trades, 'direction'),
+    timeframe: computeDimensionBreakdown(trades, 'timeframe'),
+  }
+}
+
+export interface BestWorstTrade {
+  best: Trade | null
+  worst: Trade | null
+}
+
+export function computeBestWorstTrade(trades: Trade[]): BestWorstTrade {
+  if (trades.length === 0) return { best: null, worst: null }
+  const sorted = [...trades].sort((a, b) => b.pnl - a.pnl)
+  return { best: sorted[0], worst: sorted[sorted.length - 1] }
+}
+
+export function weeklyVerdict(netR: number): WeeklyVerdict {
+  if (netR > 0) return 'PROFITABLE'
+  if (netR < 0) return 'RUGI'
+  return 'FLAT'
+}
+
+/** Evaluasi hasil trading N hari terakhir (default 7, basis exitDate). */
+export function computeWeeklyEvaluation(
+  trades: Trade[],
+  endKey: string = todayKey(),
+  days = 7,
+): WeeklyEvaluation {
+  const { startDate, endDate } = getLastNDaysRange(endKey, days)
+  const weekTrades = getTradesInRange(trades, startDate, endDate)
+  const metrics = computePeriodMetrics(weekTrades)
+  const { best, worst } = computeBestWorstTrade(weekTrades)
+  const streaks = computeStreaks(weekTrades)
+  const breakdowns = computeAllBreakdowns(weekTrades)
+
+  return {
+    startDate,
+    endDate,
+    metrics,
+    verdict: weeklyVerdict(metrics.netR),
+    bestTrade: best,
+    worstTrade: worst,
+    streaks,
+    breakdowns,
+    insights: buildWeeklyInsights(metrics, breakdowns, streaks),
+  }
 }
 
 /** Streak saat ini + rekor streak win/loss. */

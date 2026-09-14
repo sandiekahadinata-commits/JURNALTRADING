@@ -1,6 +1,18 @@
+import type { JournalConfig, Trade } from '@/types/journal.types'
+
 export interface ApiErrorShape {
   code: string
   message: string
+}
+
+export interface BootstrapResult {
+  trades: Trade[]
+  config: JournalConfig
+}
+
+export interface RecalcResult {
+  trades: number
+  months: number
 }
 
 export type ApiEnvelope<T> =

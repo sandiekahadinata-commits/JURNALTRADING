@@ -2,16 +2,25 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 import { getEnv, isAuthenticated, jsonResponse } from './_lib.js'
 
-async function fetchWithRetry(url: string, init: RequestInit, attempts: number): Promise<Response> {
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempts: number,
+  timeoutMs: number,
+): Promise<Response> {
   let lastError: unknown = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
-      return await fetch(url, init)
+      return await fetch(url, { ...init, signal: controller.signal })
     } catch (err) {
       lastError = err
       if (attempt < attempts) {
         await new Promise((resolve) => setTimeout(resolve, 500 * attempt))
       }
+    } finally {
+      clearTimeout(timer)
     }
   }
   throw lastError instanceof Error ? lastError : new Error('Gagal menghubungi backend.')
@@ -74,7 +83,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         if (key === 'action') continue
         if (typeof value === 'string') url.searchParams.set(key, value)
       }
-      const upstream = await fetchWithRetry(url.toString(), { redirect: 'follow' }, 3)
+      const upstream = await fetchWithRetry(
+        url.toString(),
+        { redirect: 'follow' },
+        2,
+        12_000,
+      )
       await passthrough(res, upstream)
       return
     }
@@ -112,6 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           redirect: 'follow',
         },
         1,
+        20_000,
       )
       await passthrough(res, upstream)
       return
