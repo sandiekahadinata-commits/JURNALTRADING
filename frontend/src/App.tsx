@@ -17,6 +17,9 @@ const TradeLogPage = lazy(() =>
 const MonthlyPage = lazy(() =>
   import('@/pages/MonthlyPage').then((m) => ({ default: m.MonthlyPage })),
 )
+const ResultPage = lazy(() =>
+  import('@/pages/ResultPage').then((m) => ({ default: m.ResultPage })),
+)
 const ConfigPage = lazy(() =>
   import('@/pages/ConfigPage').then((m) => ({ default: m.ConfigPage })),
 )
@@ -32,6 +35,7 @@ function AuthenticatedApp() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/trades" element={<TradeLogPage />} />
           <Route path="/monthly" element={<MonthlyPage />} />
+          <Route path="/result" element={<ResultPage />} />
           <Route path="/config" element={<ConfigPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

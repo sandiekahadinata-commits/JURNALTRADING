@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
+  CalendarDays,
   CandlestickChart,
   LayoutDashboard,
   LogOut,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/trades', label: 'Trade Log', icon: NotebookPen, end: false },
   { to: '/monthly', label: 'Monthly', icon: Table2, end: false },
+  { to: '/result', label: 'Result', icon: CalendarDays, end: false },
   { to: '/config', label: 'Config', icon: Settings, end: false },
 ]
 
