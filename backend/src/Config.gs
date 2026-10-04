@@ -77,10 +77,10 @@ var TRADE_RESULTS = ['Win', 'Loss', 'Break Even'];
 var MARKET_SESSIONS = ['Asia', 'London', 'New York', 'Overlap'];
 var DEFAULT_SETUP_TAGS = ['Breakout', 'Pullback', 'Range', 'OB', 'FVG'];
 
-/** Nilai default CONFIG. */
+/** Nilai default CONFIG. accountBalance = modal awal (saldo saat ini dihitung di frontend). */
 var DEFAULT_CONFIG = {
-  accountBalance: 10000,
-  riskPercent: 1,
+  accountBalance: 1000,
+  riskPercent: 5,
   targetWinRate: 50,
   setupTags: DEFAULT_SETUP_TAGS
 };

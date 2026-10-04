@@ -7,6 +7,8 @@ import {
   Hash,
   Percent,
   Scale,
+  ShieldCheck,
+  Wallet,
 } from 'lucide-react'
 
 import { BestWorstMonth } from '@/components/dashboard/BestWorstMonth'
@@ -50,7 +52,7 @@ import {
   getRecentMonthlySeries,
   groupTradesByMonth,
 } from '@/lib/metrics'
-import { useConfig, useTrades } from '@/hooks/useJournal'
+import { useAccountRisk, useConfig, useTrades } from '@/hooks/useJournal'
 
 function winRateTone(winRate: number): KpiTone {
   if (winRate > 33) return 'positive'
@@ -68,6 +70,7 @@ function profitFactorTone(pf: number): KpiTone {
 export function DashboardPage() {
   const tradesQuery = useTrades()
   const configQuery = useConfig()
+  const accountRisk = useAccountRisk()
 
   const trades = useMemo(() => tradesQuery.data ?? [], [tradesQuery.data])
   const config = configQuery.data
@@ -162,6 +165,23 @@ export function DashboardPage() {
         description={`Periode aktif: ${formatMonthLongID(current.month)}`}
         actions={<ImproveStatusBadge verdict={improve.verdict} />}
       />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <KpiCard
+          label="Saldo Akun"
+          value={formatCurrency(accountRisk.currentBalance)}
+          hint={`Modal awal ${formatCurrency(accountRisk.initialBalance)} · P&L ${formatCurrency(accountRisk.totalPnl, { signed: true })}`}
+          tone={accountRisk.currentBalance >= accountRisk.initialBalance ? 'positive' : 'negative'}
+          icon={Wallet}
+        />
+        <KpiCard
+          label="Risk per Trade"
+          value={`${formatPercent(accountRisk.riskPercent)} · ${formatCurrency(accountRisk.riskAmount)}`}
+          hint={`Fase: ${accountRisk.tier.phase}`}
+          tone="warning"
+          icon={ShieldCheck}
+        />
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <KpiCard

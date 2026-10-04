@@ -28,6 +28,12 @@ export const DEFAULT_SETUP_TAGS = [
 
 export const RISK_REWARD_RATIO = 3
 
+/** Modal awal default (USDT) bila CONFIG belum diisi. */
+export const DEFAULT_INITIAL_BALANCE = 1000
+
+/** Risk % base tier fase pertumbuhan. */
+export const BASE_RISK_PERCENT = 5
+
 /** Toleransi deviasi TP terhadap RR 1:3 (fraksi desimal, 0.005 = 0.5%). */
 export const RR_TOLERANCE = 0.005
 

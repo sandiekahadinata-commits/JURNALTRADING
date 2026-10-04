@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   useMutation,
   useQuery,
@@ -5,6 +6,15 @@ import {
   type QueryClient,
 } from '@tanstack/react-query'
 
+import { DEFAULT_INITIAL_BALANCE } from '@/lib/constants'
+import {
+  computeCurrentBalance,
+  computeRiskAmount,
+  getNextTier,
+  resolveRiskTier,
+  RISK_TIERS,
+  type RiskTier,
+} from '@/lib/risk'
 import type { TradeInput } from '@/lib/trade-utils'
 import { journalService } from '@/services/journal.service'
 import type { BootstrapResult } from '@/types/api.types'
@@ -49,6 +59,45 @@ export function useConfig() {
     queryFn: () => journalService.bootstrap(),
     select: (data: BootstrapResult) => data.config,
   })
+}
+
+export interface AccountRisk {
+  initialBalance: number
+  currentBalance: number
+  totalPnl: number
+  riskPercent: number
+  riskAmount: number
+  tier: RiskTier
+  tiers: RiskTier[]
+  nextTier: RiskTier | null
+}
+
+/** Saldo terkini + tier risiko aktif, dihitung dari modal awal + P&L trade. */
+export function useAccountRisk(): AccountRisk {
+  const config = useConfig().data
+  const trades = useTrades().data
+
+  return useMemo(() => {
+    const initialBalance = config?.accountBalance ?? DEFAULT_INITIAL_BALANCE
+    const list = trades ?? []
+    const totalPnl = list.reduce(
+      (sum, trade) => sum + (Number.isFinite(trade.pnl) ? trade.pnl : 0),
+      0,
+    )
+    const currentBalance = computeCurrentBalance(initialBalance, list)
+    const tier = resolveRiskTier(currentBalance)
+
+    return {
+      initialBalance,
+      currentBalance,
+      totalPnl,
+      riskPercent: tier.percent,
+      riskAmount: computeRiskAmount(currentBalance, tier.percent),
+      tier,
+      tiers: RISK_TIERS,
+      nextTier: getNextTier(currentBalance),
+    }
+  }, [config, trades])
 }
 
 export function usePing() {

@@ -9,14 +9,25 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { formatPercent } from '@/lib/format'
-import { useConfig, useUpdateConfig } from '@/hooks/useJournal'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { DEFAULT_INITIAL_BALANCE } from '@/lib/constants'
+import { formatCurrency, formatPercent } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import { useAccountRisk, useConfig, useUpdateConfig } from '@/hooks/useJournal'
 import { configFormSchema, type ConfigFormValues } from '@/schemas/config.schema'
 
 export function ConfigForm() {
   const configQuery = useConfig()
   const updateConfig = useUpdateConfig()
   const config = configQuery.data
+  const accountRisk = useAccountRisk()
 
   const [tags, setTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
@@ -26,8 +37,7 @@ export function ConfigForm() {
   const form = useForm<ConfigFormValues>({
     resolver: zodResolver(configFormSchema),
     defaultValues: {
-      accountBalance: 0,
-      riskPercent: 1,
+      accountBalance: DEFAULT_INITIAL_BALANCE,
       targetWinRate: 50,
       setupTags: [],
     },
@@ -37,7 +47,6 @@ export function ConfigForm() {
     register,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = form
 
@@ -45,19 +54,11 @@ export function ConfigForm() {
     if (!config) return
     reset({
       accountBalance: config.accountBalance,
-      riskPercent: config.riskPercent,
       targetWinRate: config.targetWinRate,
       setupTags: config.setupTags,
     })
     setTags(config.setupTags)
   }, [config, reset])
-
-  const accountBalance = watch('accountBalance')
-  const riskPercent = watch('riskPercent')
-  const riskAmount =
-    Number.isFinite(accountBalance) && Number.isFinite(riskPercent)
-      ? (accountBalance * riskPercent) / 100
-      : 0
 
   function addTag() {
     const value = newTag.trim()
@@ -103,9 +104,9 @@ export function ConfigForm() {
         <CardHeader className="pb-4">
           <CardTitle className="text-base">Pengaturan Akun</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="accountBalance">Account Balance (USDT)</Label>
+            <Label htmlFor="accountBalance">Modal Awal (USDT)</Label>
             <Input
               id="accountBalance"
               type="number"
@@ -117,20 +118,9 @@ export function ConfigForm() {
                 {errors.accountBalance.message}
               </p>
             ) : null}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="riskPercent">Risk per Trade (%)</Label>
-            <Input
-              id="riskPercent"
-              type="number"
-              step="any"
-              {...register('riskPercent', { valueAsNumber: true })}
-            />
-            {errors.riskPercent ? (
-              <p className="text-xs text-red-400">
-                {errors.riskPercent.message}
-              </p>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Saldo saat ini dihitung otomatis: modal awal + akumulasi P&L.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="targetWinRate">Target Win Rate (%)</Label>
@@ -146,16 +136,102 @@ export function ConfigForm() {
               </p>
             ) : null}
           </div>
-          <p className="text-sm text-muted-foreground sm:col-span-3">
-            Risiko per trade saat ini:{' '}
-            <span className="font-semibold text-foreground">
-              {new Intl.NumberFormat('en-US', {
-                maximumFractionDigits: 2,
-              }).format(riskAmount)}{' '}
-              USDT
-            </span>{' '}
-            · Target WR {formatPercent(config.targetWinRate)}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base">Strategi Risiko</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Saldo Saat Ini</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {formatCurrency(accountRisk.currentBalance)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Total P&L</p>
+              <p
+                className={cn(
+                  'text-lg font-semibold tabular-nums',
+                  accountRisk.totalPnl >= 0 ? 'text-emerald-400' : 'text-red-400',
+                )}
+              >
+                {formatCurrency(accountRisk.totalPnl, { signed: true })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Risk per Trade</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {formatPercent(accountRisk.riskPercent)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Nilai Risiko</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {formatCurrency(accountRisk.riskAmount)}
+              </p>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            Fase aktif:{' '}
+            <span className="font-medium text-foreground">
+              {accountRisk.tier.phase}
+            </span>
+            {accountRisk.nextTier ? (
+              <>
+                {' '}
+                · Turun ke {formatPercent(accountRisk.nextTier.percent)} saat
+                saldo mencapai{' '}
+                {formatCurrency(accountRisk.nextTier.minBalance)}
+              </>
+            ) : (
+              ' · Risiko sudah di floor minimum'
+            )}
           </p>
+
+          <div className="rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Saldo (USDT)</TableHead>
+                  <TableHead className="text-right">Risk %</TableHead>
+                  <TableHead>Fase</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {accountRisk.tiers.map((tier, index) => {
+                  const next = accountRisk.tiers[index + 1]
+                  const isActive = tier === accountRisk.tier
+                  return (
+                    <TableRow
+                      key={tier.minBalance}
+                      className={cn(isActive && 'bg-primary/10')}
+                    >
+                      <TableCell className="tabular-nums">
+                        {formatCurrency(tier.minBalance)}
+                        {next ? ` – ${formatCurrency(next.minBalance)}` : '+'}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          'text-right font-medium tabular-nums',
+                          isActive && 'text-primary',
+                        )}
+                      >
+                        {formatPercent(tier.percent)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {tier.phase}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

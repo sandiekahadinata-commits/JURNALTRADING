@@ -32,7 +32,9 @@ export interface Trade {
 }
 
 export interface JournalConfig {
+  /** Modal awal (USDT). Saldo terkini dihitung: modal awal + akumulasi P&L. */
   accountBalance: number
+  /** Base risk % (legacy; tier risiko aktual dihitung di lib/risk.ts). */
   riskPercent: number
   targetWinRate: number
   setupTags: string[]

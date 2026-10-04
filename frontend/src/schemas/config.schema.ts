@@ -4,10 +4,6 @@ export const configFormSchema = z.object({
   accountBalance: z
     .number({ invalid_type_error: 'Wajib diisi' })
     .nonnegative('Tidak boleh negatif'),
-  riskPercent: z
-    .number({ invalid_type_error: 'Wajib diisi' })
-    .positive('Harus lebih dari 0')
-    .max(100, 'Maksimal 100%'),
   targetWinRate: z
     .number({ invalid_type_error: 'Wajib diisi' })
     .min(0, 'Minimal 0%')

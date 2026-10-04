@@ -28,7 +28,8 @@ import {
   TIMEFRAMES,
   TRADE_RESULTS,
 } from '@/lib/constants'
-import { formatCurrency, formatR } from '@/lib/format'
+import { formatCurrency, formatPercent, formatR } from '@/lib/format'
+import { computeRecommendedPositionSize } from '@/lib/risk'
 import {
   computeRiskPerTrade,
   computeRMultiple,
@@ -36,6 +37,7 @@ import {
   validateRR,
 } from '@/lib/trade-utils'
 import { cn } from '@/lib/utils'
+import { useAccountRisk } from '@/hooks/useJournal'
 import {
   tradeFormSchema,
   type TradeFormValues,
@@ -158,6 +160,29 @@ export function TradeFormDialog({
         : null
     return { riskPerTrade, rMultiple, rr, hasNumbers }
   }, [watched])
+
+  const accountRisk = useAccountRisk()
+  const recommendedSize = useMemo(
+    () =>
+      computeRecommendedPositionSize({
+        balance: accountRisk.currentBalance,
+        percent: accountRisk.riskPercent,
+        entryPrice: watched.entryPrice,
+        stopLoss: watched.stopLoss,
+      }),
+    [
+      accountRisk.currentBalance,
+      accountRisk.riskPercent,
+      watched.entryPrice,
+      watched.stopLoss,
+    ],
+  )
+  const positionDeviation =
+    Number.isFinite(watched.positionSize) &&
+    watched.positionSize > 0 &&
+    recommendedSize > 0
+      ? Math.abs(watched.positionSize - recommendedSize) / recommendedSize
+      : null
 
   const submit = handleSubmit(async (values) => {
     const input: TradeInput = {
@@ -410,6 +435,46 @@ export function TradeFormDialog({
 
           <div className="rounded-lg border border-border bg-secondary/30 p-4">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Acuan Saldo &amp; Risiko
+            </p>
+            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Saldo Saat Ini</p>
+                <p className="font-semibold">
+                  {formatCurrency(accountRisk.currentBalance)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Risk Tier</p>
+                <p className="font-semibold">
+                  {formatPercent(accountRisk.riskPercent)} ·{' '}
+                  {formatCurrency(accountRisk.riskAmount)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Ukuran Posisi Saran
+                </p>
+                <p className="font-semibold">
+                  {recommendedSize > 0 ? formatCurrency(recommendedSize) : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fase</p>
+                <p className="font-semibold">{accountRisk.tier.phase}</p>
+              </div>
+            </div>
+            {positionDeviation !== null && positionDeviation > 0.05 ? (
+              <div className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-400">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Ukuran posisi menyimpang {(positionDeviation * 100).toFixed(1)}%
+                  dari saran strategi risiko.
+                </span>
+              </div>
+            ) : null}
+
+            <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Perhitungan Otomatis
             </p>
             <div className="grid grid-cols-2 gap-3 text-sm">

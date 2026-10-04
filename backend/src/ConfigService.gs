@@ -3,14 +3,14 @@
  * Baca/tulis sheet CONFIG.
  *
  * Layout:
- *   A1 Account Balance (USDT) | B1 nilai
- *   A2 Risk per Trade (%)     | B2 nilai
+ *   A1 Modal Awal (USDT)      | B1 nilai
+ *   A2 Risk per Trade (%)     | B2 nilai (base tier, diabaikan UI; tier di frontend)
  *   A3 Target Win Rate (%)    | B3 nilai
  *   A5 "Setup Tags"           | A6.. daftar tag
  */
 
 var CONFIG_LABELS = [
-  'Account Balance (USDT)',
+  'Modal Awal (USDT)',
   'Risk per Trade (%)',
   'Target Win Rate (%)'
 ];
