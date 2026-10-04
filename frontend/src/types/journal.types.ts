@@ -23,8 +23,10 @@ export interface Trade {
   pnl: number
   setupTag?: string
   session?: MarketSession
+  /** Alasan entry (reason entry), bukan catatan hasil. */
   notes?: string
-  screenshotUrl?: string
+  screenshotBeforeUrl?: string
+  screenshotAfterUrl?: string
   /** Derived: P&L Aktual / Risk per Trade */
   rMultiple: number
   /** Derived: YYYY-MM from exitDate */

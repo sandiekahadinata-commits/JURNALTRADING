@@ -7,7 +7,14 @@ import type {
   PingResult,
   RecalcResult,
   SeedDemoResult,
+  UploadImageResult,
 } from '@/types/api.types'
+
+export interface UploadImageInput {
+  data: string
+  mimeType: string
+  fileName: string
+}
 
 export interface TradeFilters {
   month?: string
@@ -61,4 +68,7 @@ export const journalService = {
   seedDemo: () => apiPost<SeedDemoResult>('seedDemo'),
 
   clearAll: () => apiPost<ClearAllResult>('clearAll'),
+
+  uploadImage: (input: UploadImageInput) =>
+    apiPost<UploadImageResult>('uploadImage', input),
 }

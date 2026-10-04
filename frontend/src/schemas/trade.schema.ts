@@ -29,7 +29,13 @@ export const tradeFormSchema = z
     setupTag: z.string().optional(),
     session: z.enum(['Asia', 'London', 'New York', 'Overlap']).optional(),
     notes: z.string().optional(),
-    screenshotUrl: z
+    screenshotBeforeUrl: z
+      .string()
+      .trim()
+      .url('URL tidak valid')
+      .optional()
+      .or(z.literal('')),
+    screenshotAfterUrl: z
       .string()
       .trim()
       .url('URL tidak valid')

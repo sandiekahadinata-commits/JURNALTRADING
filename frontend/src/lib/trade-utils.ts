@@ -17,7 +17,8 @@ export interface TradeInput {
   setupTag?: string
   session?: Trade['session']
   notes?: string
-  screenshotUrl?: string
+  screenshotBeforeUrl?: string
+  screenshotAfterUrl?: string
 }
 
 /** Risk per Trade = |Entry - SL| x size / Entry. */

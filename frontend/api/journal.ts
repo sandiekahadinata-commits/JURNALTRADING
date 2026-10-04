@@ -126,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           redirect: 'follow',
         },
         1,
-        20_000,
+        28_000,
       )
       await passthrough(res, upstream)
       return

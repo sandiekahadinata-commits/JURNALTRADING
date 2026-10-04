@@ -33,3 +33,9 @@ export interface ClearAllResult {
 export interface SeedDemoResult {
   inserted: number
 }
+
+export interface UploadImageResult {
+  id: string
+  url: string
+  viewUrl: string
+}

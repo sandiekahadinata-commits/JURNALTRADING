@@ -121,6 +121,18 @@ function route_(action, e, body) {
       invalidateReadCache_();
       return ok_({ inserted: seeded });
 
+    case 'uploadImage':
+      ensureInitialized_();
+      return ok_(uploadImage_(payload || {}));
+
+    case 'authorize':
+      ensureInitialized_();
+      var authInfo = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
+      return ok_({
+        status: String(authInfo.getAuthorizationStatus()),
+        url: authInfo.getAuthorizationUrl()
+      });
+
     default:
       return fail_('UNKNOWN_ACTION', 'Action tidak dikenal: ' + action);
   }

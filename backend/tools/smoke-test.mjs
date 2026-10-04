@@ -119,7 +119,8 @@ function buildPayload(overrides = {}) {
     setupTag: 'Breakout',
     session: 'London',
     notes: MARKER,
-    screenshotUrl: '',
+    screenshotBefore: '',
+    screenshotAfter: '',
     ...overrides,
   }
 }

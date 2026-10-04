@@ -3,6 +3,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 
+import { ImageDropzone } from '@/components/trades/ImageDropzone'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -67,7 +68,8 @@ function emptyValues(): TradeFormValues {
     setupTag: '',
     session: undefined,
     notes: '',
-    screenshotUrl: '',
+    screenshotBeforeUrl: '',
+    screenshotAfterUrl: '',
   }
 }
 
@@ -88,7 +90,8 @@ function toFormValues(trade: Trade): TradeFormValues {
     setupTag: trade.setupTag ?? '',
     session: trade.session,
     notes: trade.notes ?? '',
-    screenshotUrl: trade.screenshotUrl ?? '',
+    screenshotBeforeUrl: trade.screenshotBeforeUrl ?? '',
+    screenshotAfterUrl: trade.screenshotAfterUrl ?? '',
   }
 }
 
@@ -201,7 +204,8 @@ export function TradeFormDialog({
       setupTag: values.setupTag || undefined,
       session: values.session,
       notes: values.notes || undefined,
-      screenshotUrl: values.screenshotUrl || undefined,
+      screenshotBeforeUrl: values.screenshotBeforeUrl || undefined,
+      screenshotAfterUrl: values.screenshotAfterUrl || undefined,
     }
     setIsSubmitting(true)
     setSubmitError(null)
@@ -519,21 +523,36 @@ export function TradeFormDialog({
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="screenshotUrl">Screenshot URL</Label>
-            <Input
-              id="screenshotUrl"
-              placeholder="https://..."
-              {...register('screenshotUrl')}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Controller
+              control={control}
+              name="screenshotBeforeUrl"
+              render={({ field }) => (
+                <ImageDropzone
+                  label="Screenshot Before Entry"
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                />
+              )}
             />
-            <FieldError message={errors.screenshotUrl?.message} />
+            <Controller
+              control={control}
+              name="screenshotAfterUrl"
+              render={({ field }) => (
+                <ImageDropzone
+                  label="Screenshot After Entry"
+                  value={field.value || undefined}
+                  onChange={field.onChange}
+                />
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="notes">Catatan</Label>
+            <Label htmlFor="notes">Reason Entry</Label>
             <Textarea
               id="notes"
-              placeholder="Reasoning masuk, kondisi market, pelajaran..."
+              placeholder="Alasan masuk posisi (reason entry)..."
               {...register('notes')}
             />
           </div>

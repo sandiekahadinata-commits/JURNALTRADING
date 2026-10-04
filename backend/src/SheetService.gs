@@ -43,7 +43,9 @@ function ensureHeaders_(sheet, headers) {
  */
 function ensureInitialized_() {
   var props = PropertiesService.getScriptProperties();
-  if (props.getProperty('INITIALIZED') === 'true') return true;
+  var initialized = props.getProperty('INITIALIZED') === 'true';
+  var schema = props.getProperty('SCHEMA_VERSION');
+  if (initialized && schema === SCHEMA_VERSION) return true;
   return initializeSheets_();
 }
 
@@ -81,6 +83,7 @@ function initializeSheets_() {
   }
 
   PropertiesService.getScriptProperties().setProperty('INITIALIZED', 'true');
+  PropertiesService.getScriptProperties().setProperty('SCHEMA_VERSION', SCHEMA_VERSION);
   return true;
 }
 

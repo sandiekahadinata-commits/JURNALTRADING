@@ -30,6 +30,13 @@ var DEMO_SYMBOLS = [
 var DEMO_TIMEFRAMES = ['15m', '1H', '4H', '1D', '1W'];
 var DEMO_SESSIONS = ['Asia', 'London', 'New York', 'Overlap'];
 var DEMO_WIN_RATES = [0.25, 0.3, 0.34, 0.42, 0.5, 0.55];
+var DEMO_REASONS = [
+  'Breakout resistance dengan volume naik',
+  'Pullback ke EMA50 di area demand',
+  'Range bawah, konfirmasi rejection',
+  'Order block retest, struktur masih bull',
+  'FVG terisi, tunggu konfirmasi candle'
+];
 
 function seedDemoData_() {
   var rand = makeRandom_(20260912);
@@ -71,6 +78,7 @@ function seedDemoData_() {
       var exitDay = 3 + Math.floor(rand() * 25);
       var entryDay = Math.max(1, exitDay - (1 + Math.floor(rand() * 3)));
       var setupTag = config.setupTags[Math.floor(rand() * config.setupTags.length)];
+      var reasonEntry = DEMO_REASONS[Math.floor(rand() * DEMO_REASONS.length)];
 
       var entryDate = year + '-' + pad2_(monthIndex + 1) + '-' + pad2_(entryDay);
       var exitDate = year + '-' + pad2_(monthIndex + 1) + '-' + pad2_(exitDay);
@@ -90,8 +98,9 @@ function seedDemoData_() {
         pnl: pnl,
         setupTag: setupTag,
         session: session,
-        notes: result === 'Win' ? 'Setup ' + setupTag + ' valid.' : result === 'Loss' ? 'Setup ' + setupTag + ' gagal, SL kena.' : 'Ditutup BE.',
-        screenshotUrl: ''
+        notes: reasonEntry,
+        screenshotBefore: '',
+        screenshotAfter: ''
       });
       rows.push(tradeToRow_(trade));
       counter += 1;

@@ -15,6 +15,12 @@ var SPREADSHEET_ID = '__SPREADSHEET_ID__';
 /** Shared token untuk API (di-inject otomatis oleh deploy). */
 var API_TOKEN = '__API_TOKEN__';
 
+/** Versi skema sheet. Naikkan bila layout header berubah agar migrasi jalan. */
+var SCHEMA_VERSION = '2';
+
+/** Nama folder Google Drive untuk menyimpan screenshot trade. */
+var DRIVE_FOLDER_NAME = 'Crypto Trading Journal - Screenshots';
+
 /** Nama-nama tab sheet. */
 var SHEET_DASHBOARD = 'DASHBOARD';
 var SHEET_TRADE_LOG = 'TRADE LOG';
@@ -46,10 +52,11 @@ var TRADE_LOG_HEADERS = [
   'P&L Aktual',
   'Setup Tag',
   'Sesi Pasar',
-  'Catatan',
-  'Screenshot URL',
+  'Reason Entry',
+  'Screenshot Before',
   'R-Multiple',
-  'Bulan'
+  'Bulan',
+  'Screenshot After'
 ];
 
 /** Header sheet MONTHLY. */

@@ -1,4 +1,4 @@
-import { ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { ImageIcon, Pencil, Trash2 } from 'lucide-react'
 
 import { ResultBadge } from '@/components/trades/ResultBadge'
 import {
@@ -117,15 +117,37 @@ export function TradeTable({ trades, onEdit, onDelete }: TradeTableProps) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-1">
-                  {trade.screenshotUrl ? (
-                    <Button asChild variant="ghost" size="icon">
+                  {trade.screenshotBeforeUrl ? (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="text-sky-400 hover:text-sky-300"
+                      title="Screenshot before entry"
+                    >
                       <a
-                        href={trade.screenshotUrl}
+                        href={trade.screenshotBeforeUrl}
                         target="_blank"
                         rel="noreferrer"
-                        title="Buka screenshot"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ImageIcon className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : null}
+                  {trade.screenshotAfterUrl ? (
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="text-emerald-400 hover:text-emerald-300"
+                      title="Screenshot after entry"
+                    >
+                      <a
+                        href={trade.screenshotAfterUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <ImageIcon className="h-4 w-4" />
                       </a>
                     </Button>
                   ) : null}

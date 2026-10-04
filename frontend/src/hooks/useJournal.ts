@@ -16,7 +16,10 @@ import {
   type RiskTier,
 } from '@/lib/risk'
 import type { TradeInput } from '@/lib/trade-utils'
-import { journalService } from '@/services/journal.service'
+import {
+  journalService,
+  type UploadImageInput,
+} from '@/services/journal.service'
 import type { BootstrapResult } from '@/types/api.types'
 import type { JournalConfig, Trade } from '@/types/journal.types'
 
@@ -184,5 +187,11 @@ export function useClearAll() {
 export function useRecalcSheets() {
   return useMutation({
     mutationFn: () => journalService.recalcSheets(),
+  })
+}
+
+export function useUploadImage() {
+  return useMutation({
+    mutationFn: (input: UploadImageInput) => journalService.uploadImage(input),
   })
 }

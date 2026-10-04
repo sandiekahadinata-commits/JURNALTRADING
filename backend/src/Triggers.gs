@@ -123,7 +123,8 @@ function onEditHandler(e) {
       setupTag: values[14],
       session: values[15],
       notes: values[16],
-      screenshotUrl: values[17]
+      screenshotBefore: values[17],
+      screenshotAfter: values[20]
     };
 
     var id = safeString_(values[0]);

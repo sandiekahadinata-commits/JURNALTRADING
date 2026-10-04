@@ -31,9 +31,10 @@ function buildTrade_(id, input) {
     setupTag: safeString_(input.setupTag),
     session: safeString_(input.session),
     notes: safeString_(input.notes),
-    screenshotUrl: safeString_(input.screenshotUrl),
+    screenshotBefore: safeString_(input.screenshotBefore),
     rMultiple: round_(rMultiple, 2),
-    month: exitDate ? exitDate.slice(0, 7) : ''
+    month: exitDate ? exitDate.slice(0, 7) : '',
+    screenshotAfter: safeString_(input.screenshotAfter)
   };
 }
 
@@ -53,8 +54,9 @@ function rowToTrade_(obj) {
     pnl: obj['P&L Aktual'],
     setupTag: obj['Setup Tag'],
     session: obj['Sesi Pasar'],
-    notes: obj['Catatan'],
-    screenshotUrl: obj['Screenshot URL']
+    notes: obj['Reason Entry'],
+    screenshotBefore: obj['Screenshot Before'],
+    screenshotAfter: obj['Screenshot After']
   });
 }
 
@@ -77,9 +79,10 @@ function tradeToRow_(trade) {
     trade.setupTag,
     trade.session,
     trade.notes,
-    trade.screenshotUrl,
+    trade.screenshotBefore,
     trade.rMultiple,
-    trade.month
+    trade.month,
+    trade.screenshotAfter
   ];
 }
 
